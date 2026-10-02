@@ -1,0 +1,87 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.09.2026 06:03:02
+// Design Name: 
+// Module Name: tb_b_w
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module tb_b_w;
+reg  [3:0] a, b;
+    wire [7:0] p;
+
+    integer i, j;
+    integer expected;
+    integer errors;
+
+    // Instantiate Baugh-Wooley multiplier
+    b_w uut (
+        .p(p),
+        .a(a),
+        .b(b)
+    );
+
+    initial begin
+
+        errors = 0;
+
+        $display("==============================================");
+        $display("   Baugh-Wooley Signed Multiplier Testbench");
+        $display("==============================================");
+
+        // Test all possible 4-bit signed combinations
+        for (i = -8; i <= 7; i = i + 1) begin
+
+            for (j = -8; j <= 7; j = j + 1) begin
+
+                a = i;
+                b = j;
+
+                #10;
+
+                expected = i * j;
+
+                if ($signed(p) !== expected) begin
+
+                    $display("ERROR: a=%0d, b=%0d, p=%0d, expected=%0d",
+                              i, j, $signed(p), expected);
+
+                    errors = errors + 1;
+                end
+                else begin
+
+                    $display("PASS : a=%0d, b=%0d, p=%0d",
+                              i, j, $signed(p));
+
+                end
+
+            end
+        end
+
+        $display("==============================================");
+
+        if (errors == 0)
+            $display("ALL TESTS PASSED!");
+        else
+            $display("TEST FAILED! Number of errors = %0d", errors);
+
+        $display("==============================================");
+
+        $finish;
+
+    end
+endmodule
