@@ -1,0 +1,80 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10.09.2026 14:05:08
+// Design Name: 
+// Module Name: dsp_core
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module dsp_core(
+    input wire clk,
+    input wire rst_n,
+
+    input wire [7:0] a_in,
+    input wire [7:0] b_in,
+    input wire c_in,
+
+    input wire [3:0] op_code,
+    input wire mode_sel,      // 0 = MAC, 1 = ALU
+
+    output reg [15:0] result_out,
+    output reg carry,
+    output reg zero,
+    output reg negative
+);
+
+    // Internal wires
+    wire [11:0] mac_result;
+    wire [15:0] alu_result;
+    wire alu_carry;
+
+    // MAC
+    mac_unit_signed1 mac(
+        .clk(clk),
+        .rst_n(rst_n),
+        .a(a_in[3:0]),
+        .b(b_in[3:0]),
+        .accum_out(mac_result)
+    );
+
+    // ALU
+    alu alu1(
+        .result_out(alu_result),
+        .c_out(alu_carry),
+        .a_in(a_in),
+        .b_in(b_in),
+        .c_in(c_in),
+        .op_code(op_code)
+    );
+
+    // Output multiplexer
+    always @(*) begin
+
+        if(mode_sel == 1'b0) begin
+            result_out = {4'b0000, mac_result};
+            carry      = 1'b0;
+        end
+        else begin
+            result_out = alu_result;
+            carry      = alu_carry;
+        end
+
+        zero     = (result_out == 16'b0);
+        negative = result_out[15];
+
+    end
+
+endmodule
+
