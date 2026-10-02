@@ -1,0 +1,209 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.09.2026 15:06:26
+// Design Name: 
+// Module Name: dsp_core_signed_tb
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module dsp_core_signed_tb;
+reg clk;
+reg rst_n;
+
+reg signed [7:0] a_in;
+reg signed [7:0] b_in;
+reg c_in;
+
+reg [3:0] op_code;
+reg mode_sel;
+
+//--------------------------------------------------
+// Outputs
+//--------------------------------------------------
+wire signed [15:0] result_out;
+wire carry;
+wire zero;
+wire negative;
+
+integer errors;
+
+//--------------------------------------------------
+// DUT
+//--------------------------------------------------
+dsp_core_signed DUT(
+
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .a_in(a_in),
+    .b_in(b_in),
+    .c_in(c_in),
+
+    .op_code(op_code),
+    .mode_sel(mode_sel),
+
+    .result_out(result_out),
+    .carry(carry),
+    .zero(zero),
+    .negative(negative)
+
+);
+
+//--------------------------------------------------
+// Clock
+//--------------------------------------------------
+initial clk = 0;
+always #5 clk = ~clk;
+
+//--------------------------------------------------
+// Test sequence
+//--------------------------------------------------
+initial begin
+
+    errors = 0;
+
+    clk = 0;
+    rst_n = 0;
+    a_in = 0;
+    b_in = 0;
+    c_in = 0;
+    op_code = 4'b0000;
+    mode_sel = 0;
+
+    // Reset
+    repeat(2) @(posedge clk);
+    rst_n = 1;
+    @(posedge clk);
+
+    //--------------------------------------------------
+    // TEST 1 : MAC 3 × 2
+    //--------------------------------------------------
+    mode_sel = 0;
+    a_in = 8'd3;
+    b_in = 8'd2;
+
+    @(posedge clk);
+    #1;
+
+    if(result_out == 16'd6)
+        $display("PASS : MAC 3x2");
+    else begin
+        $display("FAIL : MAC 3x2 (%0d)", result_out);
+        errors = errors + 1;
+    end
+
+    //--------------------------------------------------
+    // TEST 2 : MAC Accumulation
+    //--------------------------------------------------
+    a_in = 8'd4;
+    b_in = 8'd2;
+
+    @(posedge clk);
+    #1;
+
+    if(result_out == 16'd14)
+        $display("PASS : MAC Accumulate");
+    else begin
+        $display("FAIL : MAC Accumulate (%0d)", result_out);
+        errors = errors + 1;
+    end
+
+    //--------------------------------------------------
+    // TEST 3 : ALU ADD
+    //--------------------------------------------------
+    mode_sel = 1;
+    op_code = 4'b0001;
+
+    a_in = 8'd10;
+    b_in = 8'd5;
+    c_in = 0;
+
+    #1;
+
+    if(result_out == 16'd15)
+        $display("PASS : ALU ADD");
+    else begin
+        $display("FAIL : ALU ADD (%0d)", result_out);
+        errors = errors + 1;
+    end
+
+    //--------------------------------------------------
+    // TEST 4 : ALU XOR
+    //--------------------------------------------------
+    op_code = 4'b1000;
+
+    a_in = 8'hAA;
+    b_in = 8'hCC;
+
+    #1;
+
+    if(result_out == 16'h0066)
+        $display("PASS : ALU XOR");
+    else begin
+        $display("FAIL : ALU XOR (%h)", result_out);
+        errors = errors + 1;
+    end
+
+    //--------------------------------------------------
+    // TEST 5 : Zero Flag
+    //--------------------------------------------------
+    op_code = 4'b0010;
+
+    a_in = 8'd25;
+    b_in = 8'd25;
+    c_in = 0;
+
+    #1;
+
+    if(zero)
+        $display("PASS : Zero Flag");
+    else begin
+        $display("FAIL : Zero Flag");
+        errors = errors + 1;
+    end
+
+    //--------------------------------------------------
+    // TEST 6 : Negative Flag
+    //--------------------------------------------------
+    op_code = 4'b0010;
+
+    a_in = 8'd5;
+    b_in = 8'd20;
+
+    #1;
+
+    if(negative)
+        $display("PASS : Negative Flag");
+    else begin
+        $display("FAIL : Negative Flag");
+        errors = errors + 1;
+    end
+
+    //--------------------------------------------------
+    // FINAL RESULT
+    //--------------------------------------------------
+    $display("----------------------------------");
+
+    if(errors == 0)
+        $display("ALL DSP CORE SIGNED TESTS PASSED");
+    else
+        $display("FAILED : %0d errors", errors);
+
+    $display("----------------------------------");
+
+    $finish;
+
+end
+endmodule
