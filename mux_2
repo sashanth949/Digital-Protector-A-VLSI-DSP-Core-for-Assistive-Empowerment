@@ -1,0 +1,28 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 09.09.2026 07:57:40
+// Design Name: 
+// Module Name: mux_2
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module mux_2(y,i0,i1,sel);
+output[15:0]y;
+input[15:0]i0,i1;
+input sel;
+assign y=sel?i1:i0;
+endmodule
