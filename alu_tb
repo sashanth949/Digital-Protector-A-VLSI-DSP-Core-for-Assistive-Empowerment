@@ -1,0 +1,281 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 09.09.2026 14:12:29
+// Design Name: 
+// Module Name: alu_tb
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module alu_tb;
+reg [7:0] a_in;
+reg [7:0] b_in;
+reg       c_in;
+reg [3:0] op_code;
+
+wire [15:0] result_out;
+wire        c_out;
+integer errors;
+
+// DUT
+alu uut (
+    .result_out(result_out),
+    .c_out(c_out),
+    .a_in(a_in),
+    .b_in(b_in),
+    .c_in(c_in),
+    .op_code(op_code)
+);
+
+// --------------------------------------------------
+// Task to display ALU result
+// --------------------------------------------------
+task check_result;
+    input [15:0] expected_result;
+    input        expected_carry;
+    begin
+
+        #10;
+
+        if (result_out !== expected_result ||
+            c_out      !== expected_carry) begin
+
+            $display("FAIL: OP=%b A=%h B=%h Cin=%b | Result=%h Expected=%h | Cout=%b Expected=%b",
+                     op_code, a_in, b_in, c_in,
+                     result_out, expected_result,
+                     c_out, expected_carry);
+
+            errors = errors + 1;
+        end
+        else begin
+
+            $display("PASS: OP=%b A=%h B=%h Cin=%b | Result=%h Cout=%b",
+                     op_code, a_in, b_in, c_in,
+                     result_out, c_out);
+        end
+
+    end
+endtask
+
+
+// --------------------------------------------------
+// Test sequence
+// --------------------------------------------------
+initial begin
+
+    errors = 0;
+
+    a_in    = 8'h00;
+    b_in    = 8'h00;
+    c_in    = 1'b0;
+    op_code = 4'b0000;
+
+    #10;
+
+    // ==============================================
+    // ARITHMETIC OPERATIONS
+    // op_code[3] = 0
+    // ==============================================
+
+    // OP 0000 : PASS A
+    a_in = 8'h25;
+    b_in = 8'h10;
+    c_in = 1'b0;
+    op_code = 4'b0000;
+
+    check_result(16'h0025, 1'b0);
+
+
+    // OP 0001 : A + B + Cin
+    a_in = 8'h25;
+    b_in = 8'h10;
+    c_in = 1'b0;
+    op_code = 4'b0001;
+
+    check_result(16'h0035, 1'b0);
+
+
+    // A + B + Cin with carry
+    a_in = 8'hFF;
+    b_in = 8'h01;
+    c_in = 1'b0;
+    op_code = 4'b0001;
+
+    check_result(16'h0000, 1'b1);
+
+
+    // A + B + Cin
+    a_in = 8'h25;
+    b_in = 8'h10;
+    c_in = 1'b1;
+    op_code = 4'b0001;
+
+    check_result(16'h0036, 1'b0);
+
+
+    // OP 0010 : A - B - Cin
+    a_in = 8'h25;
+    b_in = 8'h10;
+    c_in = 1'b0;
+    op_code = 4'b0010;
+
+    check_result(16'h0015, 1'b0);
+
+
+    // A - B - Cin
+    a_in = 8'h25;
+    b_in = 8'h10;
+    c_in = 1'b1;
+    op_code = 4'b0010;
+
+    check_result(16'h0014, 1'b0);
+
+
+    // OP 0011 : A + 1
+    a_in = 8'h25;
+    b_in = 8'h00;
+    c_in = 1'b0;
+    op_code = 4'b0011;
+
+    check_result(16'h0026, 1'b0);
+
+
+    // A + 1 with overflow
+    a_in = 8'hFF;
+    b_in = 8'h00;
+    c_in = 1'b0;
+    op_code = 4'b0011;
+
+    check_result(16'h0000, 1'b1);
+
+
+    // OP 0100 : B + 1
+    a_in = 8'h00;
+    b_in = 8'h25;
+    c_in = 1'b0;
+    op_code = 4'b0100;
+
+    check_result(16'h0026, 1'b0);
+
+
+    // B + 1 with overflow
+    a_in = 8'h00;
+    b_in = 8'hFF;
+    c_in = 1'b0;
+    op_code = 4'b0100;
+
+    check_result(16'h0000, 1'b1);
+
+
+    // ==============================================
+    // LOGICAL / SHIFT OPERATIONS
+    // op_code[3] = 1
+    // ==============================================
+
+    // OP 1000 : A XOR B
+    a_in = 8'hAA;
+    b_in = 8'h55;
+    c_in = 1'b0;
+    op_code = 4'b1000;
+
+    check_result(16'h00FF, 1'b0);
+
+
+    // OP 1001 : A AND B
+    a_in = 8'hAA;
+    b_in = 8'h55;
+    c_in = 1'b0;
+    op_code = 4'b1001;
+
+    check_result(16'h0000, 1'b0);
+
+
+    // OP 1010 : A OR B
+    a_in = 8'hAA;
+    b_in = 8'h55;
+    c_in = 1'b0;
+    op_code = 4'b1010;
+
+    check_result(16'h00FF, 1'b0);
+
+
+    // OP 1011 : NOT A
+    a_in = 8'hAA;
+    b_in = 8'h00;
+    c_in = 1'b0;
+    op_code = 4'b1011;
+
+    check_result(16'h0055, 1'b0);
+
+
+    // OP 1100 : NOT B
+    a_in = 8'h00;
+    b_in = 8'hAA;
+    c_in = 1'b0;
+    op_code = 4'b1100;
+
+    check_result(16'h0055, 1'b0);
+
+
+    // OP 1101 : A << B[2:0]
+    a_in = 8'h05;
+    b_in = 8'h02;
+    c_in = 1'b0;
+    op_code = 4'b1101;
+
+    check_result(16'h0014, 1'b0);
+
+
+    // OP 1110 : A >> B[2:0]
+    a_in = 8'h80;
+    b_in = 8'h02;
+    c_in = 1'b0;
+    op_code = 4'b1110;
+
+    check_result(16'h0020, 1'b0);
+
+
+    // ==============================================
+    // ZERO FLAG TEST
+    // ==============================================
+
+    // A XOR A = 0
+    a_in = 8'h55;
+    b_in = 8'h55;
+    c_in = 1'b0;
+    op_code = 4'b1000;
+
+    check_result(16'h0000, 1'b0);
+// FINAL RESULT
+// ==============================================
+
+#10;
+
+if (errors == 0) begin
+    $display("======================================");
+    $display("       ALU TEST PASSED");
+    $display("       No errors detected");
+    $display("======================================");
+end
+else begin
+    $display("======================================");
+    $display("       ALU TEST FAILED");
+    $display("       Errors = %0d", errors);
+    $display("======================================");
+end
+
+$finish;
+end
+
+endmodule
