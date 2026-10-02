@@ -1,0 +1,73 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 11.09.2026 14:46:09
+// Design Name: 
+// Module Name: fir_filter
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module fir_filter #(
+    parameter IN_W      = 4,
+    parameter COEF_W    = 4,
+    parameter NUM_TAPS  = 8,
+    parameter OUT_W     = 12,
+    parameter COEF_FILE = "coefficients.mem"
+)(
+    input  wire                     clk,
+    input  wire                     rst,        // synchronous, active high
+    input  wire signed [IN_W-1:0]   sample_in,
+    output reg  signed [OUT_W-1:0]  sample_out
+);
+    // Exact worst-case width: no overflow and no saturation logic needed.
+    localparam ACC_W = IN_W + COEF_W + $clog2(NUM_TAPS);   // 11 for 4/4/8
+ 
+    reg signed [COEF_W-1:0] coeff [0:NUM_TAPS-1];
+    reg signed [IN_W-1:0]   x     [0:NUM_TAPS-1];
+    reg signed [ACC_W-1:0]  acc;
+    integer i, k;
+ 
+    initial begin
+        if (OUT_W < ACC_W)
+            $display("ERROR: OUT_W (%0d) < ACC_W (%0d), output could overflow", OUT_W, ACC_W);
+        $readmemh(COEF_FILE, coeff);
+    end
+ 
+    // Delay line
+    always @(posedge clk) begin
+        if (rst) begin
+            for (i = 0; i < NUM_TAPS; i = i + 1)
+                x[i] <= {IN_W{1'b0}};
+        end else begin
+            for (i = NUM_TAPS-1; i > 0; i = i - 1)
+                x[i] <= x[i-1];
+            x[0] <= sample_in;
+        end
+    end
+ 
+    // Multiply-accumulate (all operands signed, so the product is sign-extended
+    // to ACC_W bits before the add)
+    always @(*) begin
+        acc = {ACC_W{1'b0}};
+        for (k = 0; k < NUM_TAPS; k = k + 1)
+            acc = acc + x[k] * coeff[k];
+    end
+ 
+    // Output register (sign-extends acc into OUT_W)
+    always @(posedge clk) begin
+        if (rst) sample_out <= {OUT_W{1'b0}};
+        else     sample_out <= acc;
+    end
+endmodule
+
