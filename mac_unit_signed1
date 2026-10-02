@@ -1,0 +1,69 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.09.2026 06:12:03
+// Design Name: 
+// Module Name: mac_unit_signed1
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module mac_unit_signed1(
+    input  wire       clk,
+    input  wire       rst_n,
+    input  wire [3:0] a,
+    input  wire [3:0] b,
+    output reg [11:0] accum_out
+);
+
+    // -----------------------------------------------
+    // 1. Baugh-Wooley signed multiplier
+    // -----------------------------------------------
+    wire [7:0] product;
+
+    b_w multiplier_inst (
+        .p(product),
+        .a(a),
+        .b(b)
+    );
+
+    // -----------------------------------------------
+    // 2. Sign-extend 8-bit product to 12 bits
+    // -----------------------------------------------
+    wire [11:0] product_ext;
+
+    assign product_ext = {{4{product[7]}}, product};
+
+    // -----------------------------------------------
+    // 3. Accumulation
+    // -----------------------------------------------
+    wire [11:0] next_accum;
+
+    assign next_accum = accum_out + product_ext;
+
+    // -----------------------------------------------
+    // 4. Accumulator register
+    // -----------------------------------------------
+    always @(posedge clk or negedge rst_n) begin
+
+        if (!rst_n)
+            accum_out <= 12'b0;
+
+        else
+            accum_out <= next_accum;
+
+    end
+
+endmodule
