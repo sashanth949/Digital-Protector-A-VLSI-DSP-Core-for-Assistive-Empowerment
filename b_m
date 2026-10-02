@@ -1,0 +1,89 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.09.2026 05:13:36
+// Design Name: 
+// Module Name: b_w
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module b_w(p, a, b);
+
+input  [3:0] a, b;
+output [7:0] p;
+
+wire [7:0] pp0, pp1, pp2, pp3;
+wire [7:0] s1, s2, s3;
+wire c1, c2, c3, c4;
+
+// --------------------------------------------------
+// Baugh-Wooley partial products
+// a[3] and b[3] are the sign bits
+// --------------------------------------------------
+
+// Row 0
+assign pp0 = {
+    4'b0000,
+    ~(a[3] & b[0]),
+    (a[2] & b[0]),
+    (a[1] & b[0]),
+    (a[0] & b[0])
+};
+
+// Row 1
+assign pp1 = {
+    3'b000,
+    ~(a[3] & b[1]),
+    (a[2] & b[1]),
+    (a[1] & b[1]),
+    (a[0] & b[1]),
+    1'b0
+};
+
+// Row 2
+assign pp2 = {
+    2'b00,
+    ~(a[3] & b[2]),
+    (a[2] & b[2]),
+    (a[1] & b[2]),
+    (a[0] & b[2]),
+    2'b00
+};
+
+// Row 3
+assign pp3 = {
+    1'b0,
+    (a[3] & b[3]),
+    ~(a[2] & b[3]),
+    ~(a[1] & b[3]),
+    ~(a[0] & b[3]),
+    3'b000
+};
+
+// --------------------------------------------------
+// Add the Baugh-Wooley partial-product rows
+// --------------------------------------------------
+
+add8 add1(s1, c1, pp0, pp1);
+add8 add2(s2, c2, s1, pp2);
+add8 add3(s3, c3, s2, pp3);
+
+// --------------------------------------------------
+// Baugh-Wooley correction
+// 1 at bit 4 and 1 at bit 7
+// --------------------------------------------------
+
+add8 add4(p, c4, s3, 8'b10010000);
+
+endmodule
