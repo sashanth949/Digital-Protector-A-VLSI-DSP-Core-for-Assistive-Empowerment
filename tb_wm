@@ -1,0 +1,48 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 15.02.2026 11:38:01
+// Design Name: 
+// Module Name: tb_wm
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module tb_wm;
+reg[3:0]a;
+reg[3:0]b;
+reg clk;
+wire[7:0]p;
+w_m uut(
+.p(p),
+.a(a),
+.b(b),
+.clk(clk)
+);
+always #5 clk=~clk;
+initial begin
+clk=0;
+a=0;
+b=0;
+#110;
+a=4'd10;b=4'd13;
+repeat(2) @(posedge clk);
+$display("10 x 13=%d",p);
+a=4'd7;b=4'd5;
+repeat(2) @(posedge clk);
+$display("7 x 5=%d",p);
+#20 $stop;
+end
+endmodule
