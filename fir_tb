@@ -1,0 +1,80 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 12.09.2026 19:40:52
+// Design Name: 
+// Module Name: fir_tb
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module fir_tb;
+    parameter N       = 400;
+    parameter LATENCY = 2;
+ 
+    reg                clk = 1'b0;
+    reg                rst = 1'b1;
+    reg  signed [3:0]  sample_in = 4'sd0;
+    wire signed [11:0] sample_out;
+ 
+    reg signed [3:0]  input_mem  [0:N-1];
+    reg signed [11:0] golden_mem [0:N-1];
+ 
+    reg [8*64-1:0] in_file, gold_file;
+    integer c, errors, logfile;
+ 
+    fir_filter DUT (.clk(clk), .rst(rst), .sample_in(sample_in), .sample_out(sample_out));
+ 
+    always #5 clk = ~clk;
+ 
+    task check(input integer idx);
+        reg ok;
+        begin
+            ok = (sample_out === golden_mem[idx]);   // === catches X/Z too
+            $fwrite(logfile, "%0d,%0d,%0d,%0d,%s\n",
+                    idx, input_mem[idx], sample_out, golden_mem[idx], ok ? "PASS" : "FAIL");
+            if (!ok) begin
+                errors = errors + 1;
+                $display("Mismatch at sample %0d : DUT=%0d GOLDEN=%0d",
+                         idx, sample_out, golden_mem[idx]);
+            end
+        end
+    endtask
+ 
+    initial begin
+        if (!$value$plusargs("IN=%s",   in_file))   in_file   = "input_audio.mem";
+        if (!$value$plusargs("GOLD=%s", gold_file)) gold_file = "golden_output.mem";
+        $readmemh(in_file,   input_mem);
+        $readmemh(gold_file, golden_mem);
+ 
+        logfile = $fopen("fir_verification_log.csv", "w");
+        $fwrite(logfile, "Sample,Input,DUT_Output,Golden_Output,Status\n");
+        errors = 0;
+ 
+        // hold reset across at least two posedges
+        @(negedge clk); @(negedge clk);
+        rst = 1'b0;
+ 
+        for (c = 0; c < N + LATENCY; c = c + 1) begin
+            if (c >= LATENCY) check(c - LATENCY);          // output for sample c-LATENCY
+            sample_in = (c < N) ? input_mem[c] : 4'sd0;    // then drive the next input
+            @(negedge clk);
+        end
+ 
+        $fclose(logfile);
+        if (errors == 0) $display("PASS : all %0d samples matched.", N);
+        else             $display("FAIL : %0d mismatches found.", errors);
+        $finish;
+    end
+
+endmodule
