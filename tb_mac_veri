@@ -1,0 +1,370 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.09.2026 06:18:25
+// Design Name: 
+// Module Name: tb_mac_veri
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module tb_mac_veri;
+ reg        clk;
+    reg        rst_n;
+    reg [3:0]  a;
+    reg [3:0]  b;
+
+    wire [11:0] accum_out;
+
+    integer expected;
+    integer errors;
+    integer i;
+
+    mac_unit_signed1 uut (
+        .clk       (clk),
+        .rst_n     (rst_n),
+        .a         (a),
+        .b         (b),
+        .accum_out (accum_out)
+    );
+
+    // Clock generation
+    initial begin
+        clk = 1'b0;
+        forever #5 clk = ~clk;
+    end
+
+
+    initial begin
+
+        errors   = 0;
+        expected = 0;
+
+        a = 4'b0000;
+        b = 4'b0000;
+        rst_n = 1'b0;
+
+
+        // =========================================================
+        // 1. RESET VERIFICATION
+        // =========================================================
+
+        #12;
+
+        if ($signed(accum_out) !== 0) begin
+            $display("FAIL : RESET -> Accum = %0d",
+                     $signed(accum_out));
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : RESET -> Accum = 0");
+        end
+
+
+        // Release reset
+        rst_n = 1'b1;
+
+
+        // =========================================================
+        // 2. POSITIVE ACCUMULATION
+        // =========================================================
+
+        // 3 x 2 = +6
+        a = 4'b0011;
+        b = 4'b0010;
+
+        expected = expected + 6;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : +3 x +2 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : +3 x +2 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // 4 x 3 = +12
+        a = 4'b0100;
+        b = 4'b0011;
+
+        expected = expected + 12;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : +4 x +3 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : +4 x +3 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // 7 x 7 = +49
+        a = 4'b0111;
+        b = 4'b0111;
+
+        expected = expected + 49;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : +7 x +7 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : +7 x +7 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // =========================================================
+        // 3. NEGATIVE ACCUMULATION
+        // =========================================================
+
+        // -3 x 2 = -6
+        a = 4'b1101;
+        b = 4'b0010;
+
+        expected = expected - 6;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : -3 x +2 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : -3 x +2 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // 4 x -2 = -8
+        a = 4'b0100;
+        b = 4'b1110;
+
+        expected = expected - 8;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : +4 x -2 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : +4 x -2 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // -4 x -4 = +16
+        a = 4'b1100;
+        b = 4'b1100;
+
+        expected = expected + 16;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : -4 x -4 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : -4 x -4 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // =========================================================
+        // 4. RESET DURING OPERATION
+        // =========================================================
+
+        rst_n = 1'b0;
+
+        #2;
+
+        if ($signed(accum_out) !== 0) begin
+            $display("FAIL : RESET DURING OPERATION -> Accum = %0d",
+                     $signed(accum_out));
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : RESET DURING OPERATION -> Accum = 0");
+        end
+
+        // Reset released again
+        rst_n = 1'b1;
+
+        expected = 0;
+
+
+        // =========================================================
+        // 5. NEGATIVE ACCUMULATION FROM ZERO
+        // =========================================================
+
+        // -8 x 7 = -56
+        a = 4'b1000;
+        b = 4'b0111;
+
+        expected = expected - 56;
+
+        @(posedge clk);
+        #1;
+
+        if ($signed(accum_out) !== expected) begin
+            $display("FAIL : -8 x +7 -> Accum = %0d, Expected = %0d",
+                     $signed(accum_out), expected);
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : -8 x +7 -> Accum = %0d",
+                     $signed(accum_out));
+        end
+
+
+        // =========================================================
+        // 6. POSITIVE OVERFLOW VERIFICATION
+        // =========================================================
+
+        // Reset before overflow test
+        rst_n = 1'b0;
+        #2;
+
+        rst_n = 1'b1;
+
+        expected = 0;
+
+        // -8 x -8 = +64
+        a = 4'b1000;
+        b = 4'b1000;
+
+        // Apply 32 times:
+        // 32 x 64 = 2048
+        // 12-bit signed maximum = +2047
+        //
+        // Therefore the result wraps to -2048.
+
+        for (i = 1; i <= 32; i = i + 1) begin
+
+            expected = expected + 64;
+
+            @(posedge clk);
+            #1;
+
+            if (i < 32) begin
+
+                if ($signed(accum_out) !== expected) begin
+                    $display("FAIL : Overflow test cycle %0d -> Accum = %0d, Expected = %0d",
+                             i, $signed(accum_out), expected);
+                    errors = errors + 1;
+                end
+
+            end
+
+        end
+
+
+        // At cycle 32:
+        // Mathematical result = +2048
+        // 12-bit signed representation = -2048
+
+        if ($signed(accum_out) !== -2048) begin
+            $display("FAIL : POSITIVE OVERFLOW -> Accum = %0d, Expected = -2048",
+                     $signed(accum_out));
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : POSITIVE OVERFLOW -> +2048 wraps to -2048");
+        end
+
+
+        // =========================================================
+        // 7. NEGATIVE OVERFLOW VERIFICATION
+        // =========================================================
+
+        rst_n = 1'b0;
+        #2;
+
+        rst_n = 1'b1;
+
+        expected = 0;
+
+        // -8 x 7 = -56
+        a = 4'b1000;
+        b = 4'b0111;
+
+        // 37 x (-56) = -2072
+        // 12-bit signed range is -2048 to +2047.
+        //
+        // Therefore overflow should occur.
+
+        for (i = 1; i <= 37; i = i + 1) begin
+
+            expected = expected - 56;
+
+            @(posedge clk);
+            #1;
+
+        end
+
+
+        // -2072 represented using 12 bits wraps to +2024
+        if ($signed(accum_out) !== 2024) begin
+            $display("FAIL : NEGATIVE OVERFLOW -> Accum = %0d, Expected = 2024",
+                     $signed(accum_out));
+            errors = errors + 1;
+        end
+        else begin
+            $display("PASS : NEGATIVE OVERFLOW -> -2072 wraps to +2024");
+        end
+
+
+        // =========================================================
+        // FINAL RESULT
+        // =========================================================
+
+        $display("==============================================");
+
+        if (errors == 0)
+            $display("ALL VERIFICATION TESTS PASSED!");
+        else
+            $display("VERIFICATION FAILED! Errors = %0d",
+                     errors);
+
+        $display("==============================================");
+
+        #20;
+        $finish;
+
+    end
+endmodule
