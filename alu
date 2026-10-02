@@ -1,0 +1,86 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 09.09.2026 07:59:09
+// Design Name: 
+// Module Name: alu
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module alu(
+    output [15:0] result_out,
+    output reg    c_out,
+    input  [7:0]  a_in,
+    input  [7:0]  b_in,
+    input         c_in,
+    input  [3:0]  op_code
+);
+
+reg [15:0] result_out_a;
+reg [15:0] result_out_b;
+
+always @(*) begin
+    c_out        = 1'b0;
+    result_out_a = 16'b0;
+    result_out_b = 16'b0;
+
+    if (op_code[3] == 1'b0) begin          // Arithmetic
+        result_out_b = 16'b0;
+        case (op_code[2:0])
+            3'b000: begin                  // Pass-through a_in (current top-level)
+                result_out_a = {{8{a_in[7]}}, a_in};   // ← sign-extend
+            end
+            3'b001: begin                  // ADD
+                {c_out, result_out_a[7:0]} = a_in + b_in + c_in;
+                result_out_a[15:8] = {8{result_out_a[7]}};  // ← sign-extend
+            end
+            3'b010: begin                  // SUB
+                {c_out, result_out_a[7:0]} = a_in - b_in - c_in;
+                result_out_a[15:8] = {8{result_out_a[7]}};  // ← sign-extend
+            end
+            3'b011: begin                  // a_in + 1
+                {c_out, result_out_a[7:0]} = a_in + 1;
+                result_out_a[15:8] = {8{result_out_a[7]}};
+            end
+            3'b100: begin                  // b_in + 1
+                {c_out, result_out_a[7:0]} = b_in + 1;
+                result_out_a[15:8] = {8{result_out_a[7]}};
+            end
+            default: begin
+                result_out_a = 16'b0;
+            end
+        endcase
+    end else begin                         // Logical (keep zero-extend or change if needed)
+        result_out_a = 16'b0;
+        case (op_code[2:0])
+            3'b000: result_out_b = {8'b0, a_in ^ b_in};
+            3'b001: result_out_b = {8'b0, a_in & b_in};
+            3'b010: result_out_b = {8'b0, a_in | b_in};
+            3'b011: result_out_b = {8'b0, ~a_in};
+            3'b100: result_out_b = {8'b0, ~b_in};
+            3'b101: result_out_b = {8'b0, a_in} << b_in[2:0];
+            3'b110: result_out_b = {8'b0, a_in} >> b_in[2:0];
+            default: result_out_b = 16'b0;
+        endcase
+    end
+end
+
+mux_2 m1(result_out, result_out_a, result_out_b, op_code[3]);
+endmodule
+
+
+
+
+
+
