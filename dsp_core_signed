@@ -1,0 +1,70 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 18.09.2026 14:57:50
+// Design Name: 
+// Module Name: dsp_core_signed
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module dsp_core_signed(
+    input clk,
+    input rst_n,
+    input signed [7:0] a_in,
+    input signed [7:0] b_in,
+    input c_in,
+    input [3:0] op_code,
+    input mode_sel,    // 0 = MAC, 1 = ALU
+    output reg signed [15:0] result_out,
+    output reg carry,
+    output reg zero,
+    output reg negative
+);
+
+    wire signed [11:0] mac_result;
+    wire [15:0] alu_result;
+    wire alu_carry;
+
+    mac_unit_signed1 mac(
+        .clk(clk),
+        .rst_n(rst_n),
+        .a(a_in[3:0]),
+        .b(b_in[3:0]),
+        .accum_out(mac_result)
+    );
+
+    alu alu1(
+        .result_out(alu_result),
+        .c_out(alu_carry),
+        .a_in(a_in),
+        .b_in(b_in),
+        .c_in(c_in),
+        .op_code(op_code)
+    );
+
+    always @(*) begin
+        if (mode_sel == 1'b0) begin
+            result_out = {{4{mac_result[11]}}, mac_result};  // sign-extend
+            carry      = 1'b0;
+            negative   = mac_result[11];
+        end else begin
+            result_out = alu_result;
+            carry      = alu_carry;
+            negative   = alu_result[7];
+        end
+        zero = (result_out == 16'b0);
+    end
+
+endmodule
+
